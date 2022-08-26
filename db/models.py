@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import as_declarative
 import datetime
 
 engine = create_engine('sqlite:///pdatabase.db', echo = True)
-meta = MetaData()
+#meta = MetaData()
 
 
 @as_declarative()
@@ -32,7 +32,7 @@ class User(BaseModel):
 # 	Column('password', String))
 
 
-class Container():
+class Container(BaseModel):
 	__tablename__ = 'containers'
 	containerID = Column(Integer, primary_key=True)
 	name = Column(String)
@@ -46,7 +46,7 @@ class Container():
 # 	Column('description', String),
 # 	Column('ownerID', Integer, ForeignKey('users.userID')))
 
-class Object():
+class Object(BaseModel):
 	__tablename__ = 'objects'
 	objectID = Column(Integer, primary_key=True)
 	name = Column(String)
@@ -60,7 +60,7 @@ class Object():
 # 	Column('containerID', Integer, ForeignKey('containers')),
 # 	Column('description', String))
 
-class AuthToken():
+class AuthToken(BaseModel):
 	__tablename__ = 'auth_tokens'
 	token = Column(String, primary_key=True)
 	userID = Column(Integer, ForeignKey('users'))
@@ -71,8 +71,9 @@ class AuthToken():
 # 	Column('token', String, primary_key=True),
 # 	Column('userID', Integer, ForeignKey('users')),
 # 	Column('expireDate', DateTime))
+
 def dict():
 	if isinstance(obj, BaseModel):
 		return obj._to_dict()
-
-meta.create_all(engine)
+#import pdb; pdb.set_trace()
+BaseModel.metadata.create_all(engine)

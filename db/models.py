@@ -1,17 +1,22 @@
-from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, create_engine, ForeignKey, DateTime
+from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, create_engine, ForeignKey, DateTime, Identity
 from sqlalchemy.ext.declarative import as_declarative
 import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
 
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pdatabase.db'
 
-engine = create_engine('sqlite:///pdatabase.db', echo=True)
+
+engine = create_engine('sqlite:////home/bianca/workspace/Project/object_storage/db/pdatabase.db', echo=True)
 # meta = MetaData()
-db = SQLAlchemy(app)
+
+db = None
+
+def register_app(app):
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/bianca/workspace/Project/object_storage/db/pdatabase.db'    
+    global db
+    db = SQLAlchemy(app)
 
 @as_declarative()
 class BaseModel(object):
@@ -45,9 +50,10 @@ class User(BaseModel):
 
 
     def create(name, password):  # create new user
-        new_user = User(datetime.datetime.now(), datetime.datetime.now(), '2', name, False, password)
+        new_user = User(datetime.datetime.now(), datetime.datetime.now(), name, False, password)
         db.session.add(new_user)
         db.session.commit()
+        db.session.flush()
 
 
 # users = Table(
@@ -63,7 +69,7 @@ class Container(BaseModel):
     containerID = Column(Integer, primary_key=True)
     name = Column(String)
     description = Column(String)
-    ownerID = Column(Integer, ForeignKey('users.userID'))
+    owner = Column(Integer, ForeignKey('users.name'))
 
 # containers = Table(
 #     'containers', meta,
@@ -91,7 +97,7 @@ class Object(BaseModel):
 class AuthToken(BaseModel):
     __tablename__ = 'auth_tokens'
     token = Column(String, primary_key=True)
-    userID = Column(Integer, ForeignKey('users'))
+    user = Column(Integer, ForeignKey('users.name'))
     expireDate = Column(DateTime)
 
 # auth_tokens = Table(

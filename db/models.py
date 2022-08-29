@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, create_engine, ForeignKey, DateTime, Identity
+from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, create_engine, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import as_declarative
 import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -20,13 +20,24 @@ def register_app(app):
 
 @as_declarative()
 class BaseModel(object):
-
+    ID = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=lambda: datetime.datetime.now())
     updated_at = Column(DateTime, onupdate=lambda: datetime.datetime.now())
 
-    def __init__(self, created_at: str, updated_at: str):
-        self.created_at = created_at
-        self.updated_at = updated_at
+    def _to_dict(self):
+        _dict = {col.name: getattr(self, col.name)
+                 for col in self.__table__.columns}
+        return _dict
+
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+        db.session.flush()
+        db.session.refresh(self)
+    # def __init__(self, created_at: str, updated_at: str):
+    #     self.created_at = created_at
+    #     self.updated_at = updated_at
 
     # def _to_dict(self):
     #     _dict = {col.name: getattr(self, col.name)
@@ -35,25 +46,22 @@ class BaseModel(object):
 
 
 class User(BaseModel):
-    __tablename__ = 'users'
-    userID = Column(Integer, primary_key=True)
+    __tablename__ = 'users'   
     name = Column(String)
     isAdmin = Column(Boolean, default=False)
     password = Column(String)
 
-    def __init__(self, created_at: str, updated_at: str, userID: int, name: str, isAdmin: bool, password: str):
-        self.userID = userID
-        self.name = name
-        self.isAdmin = isAdmin
-        self.password = password
-        super(User, self).__init__()
+    # def __init__(self, created_at: str, updated_at: str, ID: int, name: str, isAdmin: bool, password: str):
+    #     self.name = name
+    #     self.isAdmin = isAdmin
+    #     self.password = password
+    #     super(User, self).__init__()
 
 
     def create(name, password):  # create new user
-        new_user = User(datetime.datetime.now(), datetime.datetime.now(), name, False, password)
-        db.session.add(new_user)
-        db.session.commit()
-        db.session.flush()
+        new_user = User(name=name, password=password)
+        new_user.save()
+        
 
 
 # users = Table(
@@ -66,10 +74,13 @@ class User(BaseModel):
 
 class Container(BaseModel):
     __tablename__ = 'containers'
-    containerID = Column(Integer, primary_key=True)
     name = Column(String)
     description = Column(String)
-    owner = Column(Integer, ForeignKey('users.name'))
+    owner = Column(String, ForeignKey('users.name'))
+
+    def create(name, description, owner):
+        new_container = Container(name=name, description=description, owner=owner)
+        new_container.save()
 
 # containers = Table(
 #     'containers', meta,
@@ -81,10 +92,13 @@ class Container(BaseModel):
 
 class Object(BaseModel):
     __tablename__ = 'objects'
-    objectID = Column(Integer, primary_key=True)
     name = Column(String)
-    containerID = Column(Integer, ForeignKey('containers'))
     description = Column(String)
+    container = Column(String, ForeignKey('containers.name'))
+    
+    def create(name, description, container):
+        new_object = Object(name=name, description=description, container=container)
+        new_object.save()
 
 # objects = Table(
 #     'objects', meta,
@@ -96,8 +110,8 @@ class Object(BaseModel):
 
 class AuthToken(BaseModel):
     __tablename__ = 'auth_tokens'
-    token = Column(String, primary_key=True)
-    user = Column(Integer, ForeignKey('users.name'))
+    token = Column(String)
+    user = Column(String, ForeignKey('users.name'))
     expireDate = Column(DateTime)
 
 # auth_tokens = Table(

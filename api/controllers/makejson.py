@@ -24,3 +24,16 @@ def index():
 
 if __name__ == '__main__':
         app.run(host='0.0.0.0')
+
+
+
+
+# import datetime
+# from datetime import timedelta
+# datetime1 = datetime.datetime.now()
+# delta = timedelta(minutes=10)
+# datetime2 = datetime1 + delta
+# print(datetime1)
+# print(datetime2)
+# if datetime1 < datetime2:
+#     print("yes")

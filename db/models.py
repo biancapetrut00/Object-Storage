@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, create_engine, ForeignKey, DateTime
+from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, create_engine, ForeignKey, DateTime, delete
 from sqlalchemy.ext.declarative import as_declarative
 import datetime
 from flask_sqlalchemy import SQLAlchemy
@@ -9,6 +9,7 @@ from flask import Flask
 
 engine = create_engine('sqlite:////home/bianca/workspace/Project/object_storage/db/pdatabase.db', echo=True)
 # meta = MetaData()
+
 
 db = None
 
@@ -47,7 +48,7 @@ class BaseModel(object):
 
 class User(BaseModel):
     __tablename__ = 'users'   
-    name = Column(String)
+    name = Column(String, unique=True)
     isAdmin = Column(Boolean, default=False)
     password = Column(String)
 
@@ -76,7 +77,7 @@ class Container(BaseModel):
     __tablename__ = 'containers'
     name = Column(String)
     description = Column(String)
-    owner = Column(String, ForeignKey('users.name'))
+    owner = Column(String, ForeignKey('users.name', ondelete='cascade'))
 
     def create(name, description, owner):
         new_container = Container(name=name, description=description, owner=owner)
@@ -94,7 +95,7 @@ class Object(BaseModel):
     __tablename__ = 'objects'
     name = Column(String)
     description = Column(String)
-    container = Column(String, ForeignKey('containers.name'))
+    container = Column(String, ForeignKey('containers.name', ondelete='cascade'))
     
     def create(name, description, container):
         new_object = Object(name=name, description=description, container=container)
@@ -111,7 +112,7 @@ class Object(BaseModel):
 class AuthToken(BaseModel):
     __tablename__ = 'auth_tokens'
     token = Column(String)
-    user = Column(String, ForeignKey('users.name'))
+    user = Column(String, ForeignKey('users.name', ondelete='cascade'))
     expireDate = Column(DateTime)
 
 # auth_tokens = Table(

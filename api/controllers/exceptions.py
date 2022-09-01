@@ -24,3 +24,11 @@ class Forbidden(BaseException):
     status_code = 403
     message = "Forbidden"
 
+class NotFound(BaseException):
+    status_code = 404
+    message = "NotFound"
+
+class Exists(BaseException):
+    status_code = 409
+    message = "Already exists"
+

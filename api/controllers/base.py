@@ -35,30 +35,57 @@ def create_app(test_config=None):
         pass
 
 
-    def token_required(f):
-        @wraps(f)
-        def decorator(*args, **kwargs):
-            token = None
-            if 'x-access-token' in request.headers:
-                token = headers.get("X-Api-Key")
-            else:
-                return "no token provided", 1
-            datetime1 = datetime.datetime.now()
-            tokens = models.db.session.query(models.AuthToken).all()
-            tokens_list = [x._to_dict() for x in tokens]
-            for item in tokens_list:
-                if item['expireDate'] > datetime1 and item['token'] == token:
-                    return f(current_user, *args, **kwargs)
-        return decorator
-
-
-
-
     @app.errorhandler(exceptions.BaseException)
     def handle_login_error(error):
         response = jsonify(error.to_dict())
         response.status_code = error.status_code
         return response
+
+
+    def token_required(f):
+        @wraps(f)
+        def decorator(*args, **kwargs):
+            token = None
+            headers = request.headers
+            if 'X-Api-Key' in headers:
+                token = headers.get("X-Api-Key")
+            else:
+                raise exceptions.Unauthorized()
+                #return "no token provided", 401
+            datetime1 = datetime.datetime.now()
+            db_token = models.db.session.query(models.AuthToken).filter_by(token=token)
+            auth_token = [x._to_dict() for x in db_token]
+            if len(auth_token) == 0:
+                raise exceptions.Unauthorized()
+                #return "authentication failure", 401
+            if auth_token[0]['expireDate'] <= datetime1:
+                raise exceptions.Unauthorized()
+                #return "token expired", 401
+            kwargs['auth_user'] = auth_token[0]['user']
+            return f(*args, **kwargs)
+        return decorator
+
+
+    def user_exists(username):
+        db_user = models.db.session.query(models.User).filter_by(name=username)
+        auth_user = [x._to_dict() for x in db_user]
+        if len(auth_user) == 0:
+            return 0
+        return auth_user
+
+    def container_exists(container):
+        db_container = models.db.session.query(models.Container).filter_by(name=container)
+        auth_container = [x._to_dict() for x in db_container]
+        if len(auth_container) == 0:
+            return 0
+        return auth_container
+
+    def object_exists(object_name):
+        db_object = models.db.session.query(models.Object).filter_by(name=object_name)
+        auth_object = [x._to_dict() for x in db_object]
+        if len(auth_object) == 0:
+            return 0
+        return auth_object
 
 
     @app.route('/auth', methods=['POST'])
@@ -67,40 +94,28 @@ def create_app(test_config=None):
         user = request.get_json()
         username = user['username']
         password = user['password']
-        users = models.db.session.query(models.User).all()
-        users_list = [x._to_dict() for x in users]
-        for item in users_list:
-            if item['name'] == username and item['password'] == password:
-                token = secrets.token_hex(16)
-                datetime1 = datetime.datetime.now()
-                delta = timedelta(minutes=100)
-                datetime2 = datetime1 + delta
-                tokens = models.db.session.query(models.AuthToken).all()
-                tokens_list = [x._to_dict() for x in tokens]
-                for item in tokens_list:
-                    if item['expireDate'] > datetime1 and item['user'] == username:
-                        return "already logged in", 409
-                auth_db = models.AuthToken(
-                token = token,
-                user = username,
-                expireDate = datetime2)
-                auth_db.save()
-                auth_dict = auth_db._to_dict()
-                return auth_dict
-        #return "failed authentication", 401
-        #import pdb; pdb.set_trace()
-        raise exceptions.Unauthorized()
-        #raise HTTPError(400, message='Something is wrong...')
-
-
-    def login(auth_token):
+        auth_user = user_exists(username)
+        if auth_user == 0:
+            raise exceptions.Unauthorized()
+        if auth_user[0]["password"] != password:
+            raise exceptions.Unauthorized()
+        token = secrets.token_hex(16)
         datetime1 = datetime.datetime.now()
-        tokens = models.db.session.query(models.AuthToken).all()
-        tokens_list = [x._to_dict() for x in tokens]
-        for item in tokens_list:
-            if item['expireDate'] > datetime1 and item['token'] == auth_token:
-                return item['user']
-        return 0
+        delta = timedelta(minutes=100)
+        datetime2 = datetime1 + delta
+        db_token = models.db.session.query(models.AuthToken).filter_by(user=username)
+        auth_token = [x._to_dict() for x in db_token]
+        if len(auth_token) !=0:
+            for item in auth_token:
+                if item['expireDate'] > datetime1:
+                    return "already logged in", 409
+        auth_db = models.AuthToken(
+        token = token,
+        user = username,
+        expireDate = datetime2)
+        auth_db.save()
+        auth_dict = auth_db._to_dict()
+        return auth_dict
 
 
     def listUsers():
@@ -117,9 +132,9 @@ def create_app(test_config=None):
     def make_users():
         user = request.get_json()
         username = user['username']
-        for item in listUsers():
-            if item['name'] == username:
-                return "username already exists", 409
+        #for item in listUsers():
+        if user_exists(username):
+            raise exceptions.Exists()
         user_db = models.User(
             name=user.get("username"),
             password=user.get("password"))
@@ -128,104 +143,82 @@ def create_app(test_config=None):
         return user_dict
 
 
-
     @app.route('/users/<name>', methods=['GET', 'DELETE'])
     @token_required
-    def show_user(name):
-        # headers = request.headers
-        # auth = headers.get("X-Api-Key")
-        # if login(auth):
+    def show_user(name, auth_user):
         if request.method == 'GET':
-            return [(item['ID'], item['name'], item['password'], item['created_at'], 
-                item['isAdmin']) for item in listUsers() if item['name'] == name]
+            user_data = user_exists(name)
+            return [(user_data[0]['ID'], user_data[0]['name'], user_data[0]['password'], user_data[0]['created_at'], user_data[0]['isAdmin'])]
         elif request.method == 'DELETE':
             models.db.session.query(models.User).filter_by(name=name).delete()
             models.db.session.commit()
             return "success"
-        raise exceptions.Forbidden()
-
-
-    def listContainers():
-        containers = models.db.session.query(models.Container).all()
-        return [x._to_dict() for x in containers]
 
 
     @app.route('/containers', methods=['GET'])
-    def get_containers():
-        headers = request.headers
-        auth = headers.get("X-Api-Key")
-        login_name = login(auth)
-        if login_name:
-            return [(c['name'], c['description']) for c in listContainers() if c['owner'] == login_name]
-        raise exceptions.Unauthorized()
+    @token_required
+    def get_containers(auth_user):
+        db_container = models.db.session.query(models.Container).filter_by(owner=auth_user)
+        auth_container = [x._to_dict() for x in db_container]
+        if len(auth_container):
+            return [(i['name'], i['description']) for i in auth_container]
+        return "there are no containers for this user"
 
     @app.route('/containers', methods=['POST'])
     @expects_json(schema.container_schema)
-    def make_containers():
-        headers = request.headers
-        auth = headers.get("X-Api-Key")
-        if login(auth):
-            name = login(auth)
-            container = request.get_json()
-            for c in listContainers():
-                if c['name'] == container['name']:
-                    return "container already exists", 409
-            container_db = models.Container(
-            name=container.get("name"), 
-            description=container.get("description"),
-            owner=name)
-            container_db.save()
-            container_dict = container_db._to_dict()
-            return container_dict
-        raise exceptions.Unauthorized()
-
-
-    def listObjects():
-        objects = models.db.session.query(models.Object).all()
-        return [x._to_dict() for x in objects]        
+    @token_required
+    def make_containers(auth_user):
+        container = request.get_json()
+        if container_exists(container['name']):
+            raise exceptions.Exists()
+        container_db = models.Container(
+        name=container.get("name"), 
+        description=container.get("description"),
+        owner=auth_user)
+        container_db.save()
+        container_dict = container_db._to_dict()
+        return container_dict
 
 
     @app.route('/containers/<container>', methods=['GET', 'DELETE', 'HEAD'])
-    def get_objects(container):
-        headers = request.headers
-        auth = headers.get("X-Api-Key")
-        if login(auth):
-            name = login(auth)
-            for c in listContainers():
-                if c['owner'] == name and c['name'] == container:
-                    if request.method == 'GET':
-                        return [(c['name'], c['description'], c['owner'])] + [(obj['name'], obj['description']) for obj in listObjects()]
-                    elif request.method == 'HEAD':
-                        return [(c['name'], c['description'], c['owner'])]
-                    elif request.method == 'DELETE':
-                        models.db.session.query(models.Container).filter_by(name=container).delete()
-                        models.db.session.commit()
-                        return "success"
-        raise exceptions.Unauthorized()
+    @token_required
+    def get_objects(container, auth_user):
+        c_exists = container_exists(container)
+        if c_exists == 0:
+            raise exceptions.NotFound()
+        for c in c_exists:
+            if c['owner'] == auth_user:
+                if request.method == 'GET':
+                    db_object = models.db.session.query(models.Object).filter_by(container=container)
+                    current_container_objects = [x._to_dict() for x in db_object]
+                    return [(c['name'], c['description'], c['owner'])] + [(obj['name'], obj['description']) for obj in current_container_objects]
+                elif request.method == 'HEAD':
+                    return [(c['name'], c['description'], c['owner'])]
+                elif request.method == 'DELETE':
+                    models.db.session.query(models.Container).filter_by(name=container).delete()
+                    models.db.session.commit()
+                    return "success"
 
 
     @app.route('/containers/<container>', methods=['POST'])
     @expects_json(schema.object_schema)
-    def make_objects(container):
-        headers = request.headers
-        auth = headers.get("X-Api-Key")
-        if login(auth):
-            name = login(auth)
-            for c in listContainers():
-                if c['owner'] == name and c['name'] == container:
-                    objects = request.get_json()
-                    for item in listObjects():
-                        if item['name'] == objects['name']:
-                            return "object already exists", 409
-                    objects_db = models.Object(
-                        name=objects.get("name"),
-                        description=objects.get("description"),
-                        container=container)
-                    objects_db.save()
-                    objects_dict = objects_db._to_dict()
-                    return objects_dict
-        raise exceptions.Unauthorized()
-
+    @token_required
+    def make_objects(container, auth_user):
+        c_exists = container_exists(container)
+        if c_exists == 0:
+            raise exceptions.NotFound()
+        for c in c_exists:
+            if c['owner'] == auth_user:
+                objects = request.get_json()
+                if object_exists(objects['name']):
+                    raise exceptions.Exists()
+                objects_db = models.Object(
+                    name=objects.get("name"),
+                    description=objects.get("description"),
+                    container=container)
+                objects_db.save()
+                objects_dict = objects_db._to_dict()
+                return objects_dict
 
 
     if __name__ == '__main__':

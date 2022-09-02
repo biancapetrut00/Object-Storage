@@ -32,3 +32,7 @@ class Exists(BaseException):
     status_code = 409
     message = "Already exists"
 
+class Conflict(BaseException):
+    status_code = 409
+    message = "User is already logged in"
+

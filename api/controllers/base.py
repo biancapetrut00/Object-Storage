@@ -4,7 +4,7 @@ sys.path.append('/home/bianca/workspace/Project')
 print(sys.path)
 from flask import Flask, render_template, request, jsonify, abort
 from object_storage.db import models 
-from object_storage.api.controllers import exceptions
+from object_storage import exceptions
 from flask_json_schema import JsonSchema, JsonValidationError
 from flask_expects_json import expects_json
 from object_storage.api.schema import schema
@@ -16,7 +16,7 @@ from datetime import timedelta
 from functools import wraps
 
 def create_app(test_config=None):
-    app = Flask(__name__, template_folder='../../templates', instance_relative_config=True)
+    app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'object_storage.sqlite'),
@@ -51,38 +51,35 @@ def create_app(test_config=None):
                 token = headers.get("X-Api-Key")
             else:
                 raise exceptions.Unauthorized()
-                #return "no token provided", 401
             datetime1 = datetime.datetime.now()
             db_token = models.db.session.query(models.AuthToken).filter_by(token=token)
-            auth_token = [x._to_dict() for x in db_token]
+            auth_token = list(db_token)
             if len(auth_token) == 0:
                 raise exceptions.Unauthorized()
-                #return "authentication failure", 401
-            if auth_token[0]['expireDate'] <= datetime1:
+            if auth_token[0].expireDate <= datetime1:
                 raise exceptions.Unauthorized()
-                #return "token expired", 401
-            kwargs['auth_user'] = auth_token[0]['user']
+            kwargs['auth_user'] = auth_token[0].user
             return f(*args, **kwargs)
         return decorator
 
 
     def user_exists(username):
         db_user = models.db.session.query(models.User).filter_by(name=username)
-        auth_user = [x._to_dict() for x in db_user]
+        auth_user = list(db_user)
         if len(auth_user) == 0:
             return 0
         return auth_user
 
     def container_exists(container):
         db_container = models.db.session.query(models.Container).filter_by(name=container)
-        auth_container = [x._to_dict() for x in db_container]
+        auth_container = list(db_container)
         if len(auth_container) == 0:
             return 0
         return auth_container
 
     def object_exists(object_name):
         db_object = models.db.session.query(models.Object).filter_by(name=object_name)
-        auth_object = [x._to_dict() for x in db_object]
+        auth_object = list(db_object)
         if len(auth_object) == 0:
             return 0
         return auth_object
@@ -97,18 +94,17 @@ def create_app(test_config=None):
         auth_user = user_exists(username)
         if auth_user == 0:
             raise exceptions.Unauthorized()
-        if auth_user[0]["password"] != password:
+        if auth_user[0].password != password:
             raise exceptions.Unauthorized()
         token = secrets.token_hex(16)
         datetime1 = datetime.datetime.now()
         delta = timedelta(minutes=100)
         datetime2 = datetime1 + delta
         db_token = models.db.session.query(models.AuthToken).filter_by(user=username)
-        auth_token = [x._to_dict() for x in db_token]
-        if len(auth_token) !=0:
-            for item in auth_token:
-                if item['expireDate'] > datetime1:
-                    return "already logged in", 409
+        auth_token = list(db_token)
+        for item in auth_token:
+            if item.expireDate > datetime1:
+                raise exceptions.Conflict()
         auth_db = models.AuthToken(
         token = token,
         user = username,
@@ -120,12 +116,12 @@ def create_app(test_config=None):
 
     def listUsers():
         users = models.db.session.query(models.User).all()
-        return [x._to_dict() for x in users]
+        return list(users)
 
 
     @app.route('/users', methods=['GET'])
     def get_users():
-        return [item['name'] for item in listUsers()]
+        return [item.name for item in listUsers()]
 
     @app.route('/users', methods=['POST'])
     @expects_json(schema.users_schema)
@@ -148,21 +144,20 @@ def create_app(test_config=None):
     def show_user(name, auth_user):
         if request.method == 'GET':
             user_data = user_exists(name)
-            return [(user_data[0]['ID'], user_data[0]['name'], user_data[0]['password'], user_data[0]['created_at'], user_data[0]['isAdmin'])]
+            return [(user_data[0].ID, user_data[0].name, user_data[0].password, user_data[0].created_at, user_data[0].isAdmin)]
         elif request.method == 'DELETE':
             models.db.session.query(models.User).filter_by(name=name).delete()
             models.db.session.commit()
-            return "success"
+            return ""
 
 
     @app.route('/containers', methods=['GET'])
     @token_required
     def get_containers(auth_user):
         db_container = models.db.session.query(models.Container).filter_by(owner=auth_user)
-        auth_container = [x._to_dict() for x in db_container]
-        if len(auth_container):
-            return [(i['name'], i['description']) for i in auth_container]
-        return "there are no containers for this user"
+        auth_container = list(db_container)
+        return [(i.name, i.description) for i in auth_container]
+
 
     @app.route('/containers', methods=['POST'])
     @expects_json(schema.container_schema)
@@ -187,17 +182,17 @@ def create_app(test_config=None):
         if c_exists == 0:
             raise exceptions.NotFound()
         for c in c_exists:
-            if c['owner'] == auth_user:
+            if c.owner == auth_user:
                 if request.method == 'GET':
                     db_object = models.db.session.query(models.Object).filter_by(container=container)
-                    current_container_objects = [x._to_dict() for x in db_object]
-                    return [(c['name'], c['description'], c['owner'])] + [(obj['name'], obj['description']) for obj in current_container_objects]
+                    current_container_objects = list(db_object)
+                    return [(c.name, c.description, c.owner)] + [(obj.name, obj.description) for obj in current_container_objects]
                 elif request.method == 'HEAD':
-                    return [(c['name'], c['description'], c['owner'])]
+                    return [(c.name, c.description, c.owner)]
                 elif request.method == 'DELETE':
                     models.db.session.query(models.Container).filter_by(name=container).delete()
                     models.db.session.commit()
-                    return "success"
+                    return ""
 
 
     @app.route('/containers/<container>', methods=['POST'])
@@ -208,7 +203,7 @@ def create_app(test_config=None):
         if c_exists == 0:
             raise exceptions.NotFound()
         for c in c_exists:
-            if c['owner'] == auth_user:
+            if c.owner == auth_user:
                 objects = request.get_json()
                 if object_exists(objects['name']):
                     raise exceptions.Exists()

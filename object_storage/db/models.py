@@ -4,18 +4,17 @@ import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
 
-
-engine = create_engine('sqlite:////home/bianca/workspace/Project/object_storage/db/pdatabase.db', echo=True)
-# meta = MetaData()
-
-
+engine = None
 db = None
 
-def register_app(app):
+def setup(app, db_url):
+    engine = create_engine(db_url)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/bianca/workspace/Project/object_storage/db/pdatabase.db'    
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     global db
     db = SQLAlchemy(app)
+    BaseModel.metadata.create_all(engine)
+
 
 @as_declarative()
 class BaseModel(object):
@@ -63,4 +62,3 @@ class AuthToken(BaseModel):
     expireDate = Column(DateTime)
 
 
-BaseModel.metadata.create_all(engine)

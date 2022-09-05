@@ -1,5 +1,5 @@
 from flask import Flask, request
-from object_storage.db import models 
+from object_storage.db import models
 from object_storage import exceptions
 from flask_json_schema import JsonSchema, JsonValidationError
 from flask_expects_json import expects_json
@@ -23,7 +23,6 @@ def object_exists(object_name):
     if len(auth_object) == 0:
         return 0
     return auth_object
-
 
 
 @objects_api.route('/containers/<container>', methods=['POST'])

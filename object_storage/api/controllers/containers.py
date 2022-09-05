@@ -1,5 +1,5 @@
 from flask import Flask, request
-from object_storage.db import models 
+from object_storage.db import models
 from object_storage import exceptions
 from flask_json_schema import JsonSchema, JsonValidationError
 from flask_expects_json import expects_json
@@ -39,9 +39,9 @@ def make_containers(auth_user):
     if container_exists(container['name']):
         raise exceptions.Exists()
     container_db = models.Container(
-    name=container.get("name"), 
-    description=container.get("description"),
-    owner=auth_user)
+        name=container.get("name"),
+        description=container.get("description"),
+        owner=auth_user)
     container_db.save()
     container_dict = container_db._to_dict()
     return container_dict
@@ -60,9 +60,12 @@ def get_objects(container, auth_user):
             if request.method == 'GET':
                 db_object = models.db.session.query(models.Object).filter_by(container=container)
                 current_container_objects = list(db_object)
-                return [(c.name, c.description, c.owner)] + [(obj.name, obj.description) for obj in current_container_objects]
+                return [(c.name, c.description,
+                         c.owner)] + [(obj.name,
+                                       obj.description) for obj in current_container_objects]
             elif request.method == 'HEAD':
                 return [(c.name, c.description, c.owner)]
+
 
 @containers_api.route('/containers/<container>', methods=['DELETE'])
 @token_required

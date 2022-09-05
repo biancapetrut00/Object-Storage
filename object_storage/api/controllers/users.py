@@ -1,5 +1,5 @@
 from flask import Flask, request
-from object_storage.db import models 
+from object_storage.db import models
 from object_storage import exceptions
 from flask_json_schema import JsonSchema, JsonValidationError
 from flask_expects_json import expects_json
@@ -11,7 +11,6 @@ import datetime
 import secrets
 from datetime import timedelta
 from flask import Blueprint
-#from object_storage.api.controllers.base import token_required
 
 users_api = Blueprint('users_api', __name__)
 
@@ -71,9 +70,9 @@ def auth():
         if item.expireDate > datetime1:
             raise exceptions.Conflict()
     auth_db = models.AuthToken(
-    token = token,
-    user = username,
-    expireDate = datetime2)
+        token=token,
+        user=username,
+        expireDate=datetime2)
     auth_db.save()
     auth_dict = auth_db._to_dict()
     return auth_dict
@@ -83,12 +82,12 @@ def auth():
 def get_users():
     return [item.name for item in listUsers()]
 
+
 @users_api.route('/users', methods=['POST'])
 @expects_json(schema.users_schema)
 def make_users():
     user = request.get_json()
     username = user['username']
-    #for item in listUsers():
     if user_exists(username):
         raise exceptions.Exists()
     user_db = models.User(
@@ -105,7 +104,8 @@ def show_user(name, auth_user):
     if name != auth_user:
         raise exceptions.Forbidden()
     user_data = user_exists(name)
-    return [(user_data[0].ID, user_data[0].name, user_data[0].password, user_data[0].created_at, user_data[0].isAdmin)]
+    return [(user_data[0].ID, user_data[0].name, user_data[0].password,
+             user_data[0].created_at, user_data[0].isAdmin)]
 
 
 @users_api.route('/users/<name>', methods=['DELETE'])

@@ -11,6 +11,7 @@ import datetime
 from datetime import timedelta
 from flask import Blueprint
 from object_storage.api.controllers.users import token_required
+from object_storage.backend import factory
 
 containers_api = Blueprint('containers_api', __name__)
 
@@ -25,7 +26,7 @@ def container_exists(container):
 
 @containers_api.route('/containers', methods=['GET'])
 @token_required
-def get_containers(auth_user):
+def get_container(auth_user):
     db_container = models.db.session.query(models.Container).filter_by(owner=auth_user)
     auth_container = list(db_container)
     return [(i.name, i.description) for i in auth_container]
@@ -43,6 +44,10 @@ def make_containers(auth_user):
         description=container.get("description"),
         owner=auth_user)
     container_db.save()
+
+    backend = factory.get_backend()
+    backend.create_container(container_db)
+
     container_dict = container_db._to_dict()
     return container_dict
 

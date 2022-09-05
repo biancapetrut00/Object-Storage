@@ -12,6 +12,7 @@ from datetime import timedelta
 from flask import Blueprint
 from object_storage.api.controllers.users import token_required
 from object_storage.api.controllers.containers import container_exists
+from object_storage.backend import factory
 
 
 objects_api = Blueprint('objects_api', __name__)
@@ -22,7 +23,7 @@ def object_exists(object_name):
     auth_object = list(db_object)
     if len(auth_object) == 0:
         return 0
-    return auth_object
+    return auth_object[0]
 
 
 @objects_api.route('/containers/<container>', methods=['POST'])
@@ -30,19 +31,34 @@ def object_exists(object_name):
 @token_required
 def make_objects(container, auth_user):
     c_exists = container_exists(container)
-    if c_exists[0].owner != auth_user:
-        raise exceptions.Forbidden()
     if c_exists == 0:
         raise exceptions.NotFound()
-    for c in c_exists:
-        if c.owner == auth_user:
-            objects = request.get_json()
-            if object_exists(objects['name']):
-                raise exceptions.Exists()
-            objects_db = models.Object(
-                name=objects.get("name"),
-                description=objects.get("description"),
-                container=container)
-            objects_db.save()
-            objects_dict = objects_db._to_dict()
-            return objects_dict
+    if c_exists[0].owner != auth_user:
+        raise exceptions.Forbidden()
+    obj = request.get_json()
+    if object_exists(obj['name']):
+        raise exceptions.Exists()
+    obj_db = models.Object(
+        name=obj.get("name"),
+        description=obj.get("description"),
+        container=container)
+    obj_db.save()
+    obj_dict = obj_db._to_dict()
+
+    return obj_dict
+
+@objects_api.route('/containers/<container>/<obj>/data', methods=['PUT'])
+@token_required
+def upload_objects(container, obj, auth_user):
+    c_exists = container_exists(container)
+    if c_exists == 0:
+        raise exceptions.NotFound()
+    if c_exists[0].owner != auth_user:
+        raise exceptions.Forbidden()
+    obj_db = object_exists(obj)
+    if not obj_db:
+        raise exceptions.NotFound("object not found")
+
+    backend = factory.get_backend()
+    backend.store_object(obj_db, request.stream)
+    return obj_db._to_dict()

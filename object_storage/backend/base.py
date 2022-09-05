@@ -3,21 +3,18 @@ import abc
 
 class Backend(abc.ABC):
     @abc.abstractmethod
-    def delete_object(obj):
+    def delete_object(self, obj):
         pass
 
     @abc.abstractmethod
-    def create_object(obj):
+    def store_object(self, obj, payload):
         pass
 
     @abc.abstractmethod
-    def store_object(obj, payload):
+    def create_container(self, container):
         pass
 
     @abc.abstractmethod
-    def create_container(container):
+    def delete_container(self, container):
         pass
 
-    @abc.abstractmethod
-    def delete_container(container):
-        pass

@@ -36,3 +36,10 @@ class Conflict(BaseException):
     status_code = 409
     message = "User is already logged in"
 
+class InvalidRequest(BaseException):
+    status_code = 400
+    message = "Invalid request"
+
+class InvalidConfig(BaseException):
+    message = "Invalid Config"
+

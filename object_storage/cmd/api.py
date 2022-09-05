@@ -35,6 +35,10 @@ def create_app(test_config=None):
         SECRET_KEY='dev',
         DATABASE=get_db_url()
     )
+    # UPLOAD_FOLDER = '/tmp/uploads'
+    # app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    # app.config['MAX_CONTENT_PATH'] = 16 * 1000
+
     models.setup(app, get_db_url())
 
     app.register_blueprint(users_api)

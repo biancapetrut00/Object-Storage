@@ -1,1 +1,4 @@
 db_url = "sqlite:////tmp/object_storage.db"
+
+[file]
+container_directory = "/tmp/object_storage"

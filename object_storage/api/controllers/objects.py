@@ -44,8 +44,8 @@ def make_objects(container, auth_user):
         container=container)
     obj_db.save()
     obj_dict = obj_db._to_dict()
-
     return obj_dict
+
 
 @objects_api.route('/containers/<container>/<obj>/data', methods=['PUT'])
 @token_required
@@ -53,7 +53,7 @@ def upload_objects(container, obj, auth_user):
     c_exists = container_exists(container)
     if c_exists == 0:
         raise exceptions.NotFound()
-    if c_exists[0].owner != auth_user:
+    if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
     obj_db = object_exists(obj)
     if not obj_db:
@@ -62,3 +62,21 @@ def upload_objects(container, obj, auth_user):
     backend = factory.get_backend()
     backend.store_object(obj_db, request.stream)
     return obj_db._to_dict()
+
+
+@objects_api.route('/containers/<container>/<obj>', methods=['GET'])
+@token_required
+def show_object(container, obj, auth_user):
+    c_exists = container_exists(container)
+    if c_exists == 0:
+        raise exceptions.NotFound()
+    if c_exists.owner != auth_user:
+        raise exceptions.Forbidden()
+    obj_db = object_exists(obj)
+    if not obj_db:
+        raise exceptions.NotFound("object not found")
+
+    # db_object = models.db.session.query(models.Object).filter_by(name=obj)
+    # current_object_list = list(db_object)
+    # current_object = current_object_list[0]
+    return [(obj_db.name, obj_db.description, obj_db.container)]

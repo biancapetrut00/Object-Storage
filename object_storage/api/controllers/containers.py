@@ -21,7 +21,7 @@ def container_exists(container):
     auth_container = list(db_container)
     if len(auth_container) == 0:
         return 0
-    return auth_container
+    return auth_container[0]
 
 
 @containers_api.route('/containers', methods=['GET'])
@@ -56,32 +56,28 @@ def make_containers(auth_user):
 @token_required
 def get_objects(container, auth_user):
     c_exists = container_exists(container)
-    if c_exists[0].owner != auth_user:
+    if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
     if c_exists == 0:
         raise exceptions.NotFound()
-    for c in c_exists:
-        if c.owner == auth_user:
-            if request.method == 'GET':
-                db_object = models.db.session.query(models.Object).filter_by(container=container)
-                current_container_objects = list(db_object)
-                return [(c.name, c.description,
-                         c.owner)] + [(obj.name,
-                                       obj.description) for obj in current_container_objects]
-            elif request.method == 'HEAD':
-                return [(c.name, c.description, c.owner)]
+    if request.method == 'GET':
+        db_object = models.db.session.query(models.Object).filter_by(container=container)
+        current_container_objects = list(db_object)
+        return [(c_exists.name, c_exists.description,
+                 c_exists.owner)] + [(obj.name,
+                               obj.description) for obj in current_container_objects]
+    elif request.method == 'HEAD':
+        return [(c_exists.name, c_exists.description, c_exists.owner)]
 
 
 @containers_api.route('/containers/<container>', methods=['DELETE'])
 @token_required
 def delete_container(container, auth_user):
     c_exists = container_exists(container)
-    if c_exists[0].owner != auth_user:
+    if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
     if c_exists == 0:
         raise exceptions.NotFound()
-    for c in c_exists:
-        if c.owner == auth_user:
-            models.db.session.query(models.Container).filter_by(name=container).delete()
-            models.db.session.commit()
-            return ""
+    models.db.session.query(models.Container).filter_by(name=container).delete()
+    models.db.session.commit()
+    return ""

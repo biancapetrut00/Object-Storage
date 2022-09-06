@@ -36,7 +36,7 @@ def make_users():
     user = request.get_json()
     username = user['username']
     if user_exists(username):
-        raise exceptions.Exists()
+        raise exceptions.Exists("The username already exists")
     user_db = models.User(
         name=user.get("username"),
         password=user.get("password"))

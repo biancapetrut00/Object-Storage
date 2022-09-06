@@ -41,7 +41,7 @@ def container_exists(container):
 def make_objects(container, auth_user):
     c_exists = container_exists(container)
     if c_exists == 0:
-        raise exceptions.NotFound()
+        raise exceptions.NotFound("Container not found")
     if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
     obj = request.get_json()
@@ -62,12 +62,12 @@ def make_objects(container, auth_user):
 def upload_objects(container, obj, auth_user):
     c_exists = container_exists(container)
     if c_exists == 0:
-        raise exceptions.NotFound()
+        raise exceptions.NotFound("Container not found")
     if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
     obj_db = object_exists(obj)
     if not obj_db:
-        raise exceptions.NotFound("object not found")
+        raise exceptions.NotFound("Object not found")
     backend = factory.get_backend()
     backend.store_object(obj_db, request.stream)
     LOG.info("Successfuly stored object data for %s", obj_db.name)
@@ -79,12 +79,12 @@ def upload_objects(container, obj, auth_user):
 def show_object(container, obj, auth_user):
     c_exists = container_exists(container)
     if c_exists == 0:
-        raise exceptions.NotFound("container not found")
+        raise exceptions.NotFound("Container not found")
     if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
     obj_db = object_exists(obj)
     if not obj_db:
-        raise exceptions.NotFound("object not found")
+        raise exceptions.NotFound("Object not found")
     backend = factory.get_backend()
     response = backend.read_object(obj_db, request.stream)
     return response
@@ -95,12 +95,12 @@ def show_object(container, obj, auth_user):
 def show_object_metadata(container, obj, auth_user):
     c_exists = container_exists(container)
     if c_exists == 0:
-        raise exceptions.NotFound("container not found")
+        raise exceptions.NotFound("Container not found")
     if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
     obj_db = object_exists(obj)
     if not obj_db:
-        raise exceptions.NotFound("object not found")
+        raise exceptions.NotFound("Object not found")
     return [(obj_db.name, obj_db.description, obj_db.container)]
 
 
@@ -109,7 +109,7 @@ def show_object_metadata(container, obj, auth_user):
 def delete_object(container, obj, auth_user):
     c_exists = container_exists(container)
     if c_exists == 0:
-        raise exceptions.NotFound("container not found")
+        raise exceptions.NotFound("Container not found")
     if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
     obj_db = object_exists(obj)

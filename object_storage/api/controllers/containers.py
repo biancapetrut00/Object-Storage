@@ -34,7 +34,7 @@ def get_container(auth_user):
 def make_containers(auth_user):
     container = request.get_json()
     if container_exists(container['name']):
-        raise exceptions.Exists()
+        raise exceptions.Exists("The container already exists")
     container_db = models.Container(
         name=container.get("name"),
         description=container.get("description"),
@@ -51,10 +51,10 @@ def make_containers(auth_user):
 @token_required
 def get_objects(container, auth_user):
     c_exists = container_exists(container)
+    if c_exists == 0:
+        raise exceptions.NotFound("Container not found")
     if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
-    if c_exists == 0:
-        raise exceptions.NotFound()
     if request.method == 'GET':
         db_object = models.db.session.query(models.Object).filter_by(container=container)
         current_container_objects = list(db_object)
@@ -73,10 +73,10 @@ def get_objects(container, auth_user):
 @token_required
 def delete_container(container, auth_user):
     c_exists = container_exists(container)
+    if c_exists == 0:
+        raise exceptions.NotFound("Container not found")
     if c_exists.owner != auth_user:
         raise exceptions.Forbidden()
-    if c_exists == 0:
-        raise exceptions.NotFound()
     db_object = models.db.session.query(models.Object).filter_by(container=container)
     current_container_objects = list(db_object)
     item_list = []

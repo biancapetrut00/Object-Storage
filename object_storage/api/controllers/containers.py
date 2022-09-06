@@ -10,18 +10,14 @@ from functools import wraps
 import datetime
 from datetime import timedelta
 from flask import Blueprint
-from object_storage.api.controllers.users import token_required
+from object_storage.api.controllers.login import token_required
 from object_storage.backend import factory
+from object_storage.api.controllers.objects import delete_object, container_exists
+import logging
+
 
 containers_api = Blueprint('containers_api', __name__)
-
-
-def container_exists(container):
-    db_container = models.db.session.query(models.Container).filter_by(name=container)
-    auth_container = list(db_container)
-    if len(auth_container) == 0:
-        return 0
-    return auth_container[0]
+LOG = logging.getLogger("object_storage")
 
 
 @containers_api.route('/containers', methods=['GET'])
@@ -44,10 +40,9 @@ def make_containers(auth_user):
         description=container.get("description"),
         owner=auth_user)
     container_db.save()
-
     backend = factory.get_backend()
     backend.create_container(container_db)
-
+    LOG.info("Created container: %s", container_db.name)
     container_dict = container_db._to_dict()
     return container_dict
 
@@ -63,9 +58,13 @@ def get_objects(container, auth_user):
     if request.method == 'GET':
         db_object = models.db.session.query(models.Object).filter_by(container=container)
         current_container_objects = list(db_object)
-        return [(c_exists.name, c_exists.description,
-                 c_exists.owner)] + [(obj.name,
-                               obj.description) for obj in current_container_objects]
+        return [(
+            c_exists.name,
+            c_exists.description,
+            c_exists.owner)] + [(
+                            obj.name,
+                            obj.description)
+            for obj in current_container_objects]
     elif request.method == 'HEAD':
         return [(c_exists.name, c_exists.description, c_exists.owner)]
 
@@ -78,6 +77,16 @@ def delete_container(container, auth_user):
         raise exceptions.Forbidden()
     if c_exists == 0:
         raise exceptions.NotFound()
+    db_object = models.db.session.query(models.Object).filter_by(container=container)
+    current_container_objects = list(db_object)
+    item_list = []
+    for obj in current_container_objects:
+        item_list.append(obj.name)
+        delete_object(container, obj.name)
+    items = ', '.join([str(elem) for elem in item_list])
+    backend = factory.get_backend()
+    backend.delete_container(c_exists)
     models.db.session.query(models.Container).filter_by(name=container).delete()
     models.db.session.commit()
+    LOG.info("Deleted the " + c_exists.name +" container and all of the files inside: " + items)
     return ""

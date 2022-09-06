@@ -1,6 +1,5 @@
 import os
 import sys
-#sys.path.append('/home/bianca/workspace/Project')
 from flask import Flask, request, jsonify
 from object_storage.db import models
 from object_storage import exceptions
@@ -16,11 +15,15 @@ from functools import wraps
 from object_storage.api.controllers.users import users_api
 from object_storage.api.controllers.containers import containers_api
 from object_storage.api.controllers.objects import objects_api
+from object_storage.api.controllers.login import login_api
 from object_storage import conf
 import argparse
+import logging
 
 parser = argparse.ArgumentParser()
 parser.add_argument("conf", help="config file location")
+
+LOG = logging.getLogger()
 
 def get_db_url():
     url = conf.CONF.get("db_url")
@@ -28,22 +31,21 @@ def get_db_url():
         raise Exception("no db url specified")
     return url
 
+
 def create_app(test_config=None):
-    
+
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev',
         DATABASE=get_db_url()
     )
-    # UPLOAD_FOLDER = '/tmp/uploads'
-    # app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-    # app.config['MAX_CONTENT_PATH'] = 16 * 1000
 
     models.setup(app, get_db_url())
 
     app.register_blueprint(users_api)
     app.register_blueprint(containers_api)
     app.register_blueprint(objects_api)
+    app.register_blueprint(login_api)
 
     if test_config is None:
         app.config.from_pyfile('config.py', silent=True)
@@ -63,12 +65,23 @@ def create_app(test_config=None):
 
     return app
 
+def setup_logging():
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.DEBUG)
+    log_fmt = '[%(asctime)s] %(levelname)s - %(message)s'
+    formatter = logging.Formatter(log_fmt)
+    handler.setFormatter(formatter)
+
+    LOG.addHandler(handler)
+    LOG.setLevel(logging.DEBUG)
+
 
 def main():
     args = parser.parse_args()
     if not args.conf:
         raise Exception("missing config file")
     conf.load_conf(args.conf)
+    setup_logging()
 
     app = create_app()
     app.run(host='0.0.0.0')

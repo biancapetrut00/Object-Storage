@@ -4,6 +4,7 @@ from flask import Blueprint, Flask, flash, request, send_from_directory, redirec
 import hashlib
 from object_storage import conf
 import six
+from object_storage import exceptions
 
 
 class FileBackend(base.Backend):
@@ -36,7 +37,10 @@ class FileBackend(base.Backend):
             self._hash_name(object_name))
 
     def delete_object(self, obj):
-        raise NotImplemented()
+        if not obj.container:
+            raise exceptions.InvalidRequest("no container specified")
+        file_path = self._get_file_path(obj.container, obj.name)
+        os.remove(file_path)
 
     def store_object(self, obj, payload):
         if not obj.container:
@@ -50,15 +54,27 @@ class FileBackend(base.Backend):
                     break
                 f.write(chunk)
 
+    def read_object(self, obj, payload):
+        if not obj.container:
+            raise exceptions.InvalidRequest("no container specified")
+        file_path = self._get_file_path(obj.container, obj.name)
 
+        def response():
+            with open(file_path, "rb") as f:
+                while True:
+                    chunk = f.read(64 * 1024)
+                    if not chunk:
+                        break
+                    yield chunk
+        return response()
 
     def create_container(self, container):
         container_path = self._get_container_path(container.name)
         if not os.path.exists(container_path):
             os.makedirs(container_path)
-        
 
     def delete_container(self, container):
-        raise NotImplemented()
-
-
+        container_path = self._get_container_path(container.name)
+        if not os.path.exists(container_path):
+            raise exceptions.InvalidRequest("container doesn't exist")
+        os.rmdir(container_path)

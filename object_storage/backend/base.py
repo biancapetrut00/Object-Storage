@@ -18,3 +18,6 @@ class Backend(abc.ABC):
     def delete_container(self, container):
         pass
 
+    @abc.abstractmethod
+    def read_object(self, obj, payload):
+        pass

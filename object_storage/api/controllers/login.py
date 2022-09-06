@@ -11,8 +11,10 @@ import datetime
 import secrets
 from datetime import timedelta
 from flask import Blueprint
+import logging
 
 login_api = Blueprint('login_api', __name__)
+LOG = logging.getLogger('object_storage')
 
 
 def token_required(f):
@@ -61,6 +63,7 @@ def auth():
         user=username,
         expireDate=datetime2)
     auth_db.save()
+    LOG.info("Logged in user: %s", username)
     auth_dict = auth_db._to_dict()
     return auth_dict
 

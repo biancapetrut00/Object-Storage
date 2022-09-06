@@ -3,9 +3,12 @@ from sqlalchemy.ext.declarative import as_declarative
 import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
+import logging
 
 engine = None
 db = None
+
+LOG = logging.getLogger("object_storage")
 
 def setup(app, db_url):
     engine = create_engine(db_url)
@@ -14,6 +17,7 @@ def setup(app, db_url):
     global db
     db = SQLAlchemy(app)
     BaseModel.metadata.create_all(engine)
+    LOG.info("Connected to the database")
 
 
 @as_declarative()

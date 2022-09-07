@@ -19,5 +19,5 @@ class Backend(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def read_object(self, obj, payload):
+    def read_object(self, obj):
         pass

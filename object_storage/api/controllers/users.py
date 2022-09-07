@@ -27,7 +27,7 @@ def listUsers():
 
 @users_api.route('/users', methods=['GET'])
 def get_users():
-    return [item.name for item in listUsers()]
+    return [{"username": item.name, "description": item.description} for item in listUsers()]
 
 
 @users_api.route('/users', methods=['POST'])
@@ -39,7 +39,8 @@ def make_users():
         raise exceptions.Exists("The username already exists")
     user_db = models.User(
         name=user.get("username"),
-        password=user.get("password"))
+        password=user.get("password"),
+        description=user.get("description"))
     user_db.save()
     LOG.info("Created a new user: %s", username)
     user_dict = user_db._to_dict()
@@ -52,8 +53,12 @@ def show_user(name, auth_user):
     if name != auth_user:
         raise exceptions.Forbidden()
     user_data = user_exists(name)
-    return [(user_data[0].ID, user_data[0].name, user_data[0].password,
-             user_data[0].created_at, user_data[0].isAdmin)]
+    return {
+    "ID": user_data[0].ID,
+    "name": user_data[0].name,
+    "password": user_data[0].password,
+    "created_at": user_data[0].created_at,
+    "is_admin": user_data[0].isAdmin}
 
 
 @users_api.route('/users/<name>', methods=['DELETE'])

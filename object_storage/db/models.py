@@ -43,6 +43,7 @@ class User(BaseModel):
     name = Column(String, unique=True)
     isAdmin = Column(Boolean, default=False)
     password = Column(String)   
+    description = Column(String)
 
 
 class Container(BaseModel):

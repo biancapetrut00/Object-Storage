@@ -86,7 +86,7 @@ def show_object(container, obj, auth_user):
     if not obj_db:
         raise exceptions.NotFound("Object not found")
     backend = factory.get_backend()
-    response = backend.read_object(obj_db, request.stream)
+    response = backend.read_object(obj_db)
     return response
 
 

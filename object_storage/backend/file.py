@@ -54,7 +54,7 @@ class FileBackend(base.Backend):
                     break
                 f.write(chunk)
 
-    def read_object(self, obj, payload):
+    def read_object(self, obj):
         if not obj.container:
             raise exceptions.InvalidRequest("no container specified")
         file_path = self._get_file_path(obj.container, obj.name)

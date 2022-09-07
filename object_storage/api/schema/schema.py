@@ -1,8 +1,9 @@
 users_schema = {
     "type": "object",
     "properties": {
-        "username": {"type": "string",  "minLength": 3, "maxLength": 15},
-        "password": {"type": "string",  "minLength": 3, "maxLength": 15}
+        "username": {"type": "string",  "minLength": 3, "maxLength": 32},
+        "password": {"type": "string",  "minLength": 3, "maxLength": 64},
+        "description": {"type": "string"}
     },
     "required": ["username", "password"]
 }

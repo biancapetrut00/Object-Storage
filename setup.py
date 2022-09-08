@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='object_storage',
@@ -7,7 +7,7 @@ setup(
     author='Bianca Petrut',
     #author_email='gward@python.net',
     #url='https://www.python.org/sigs/distutils-sig/',
-    packages=['object_storage'],
+    packages=find_packages(),
     install_requires=[
         'toml',
         'Flask',

@@ -14,7 +14,8 @@ setup(
         'SQLAlchemy',
         'Flask-SQLAlchemy',
         'flask-json-schema',
-        'flask-expects-json'
+        'flask-expects-json',
+        'six'
     ],
     entry_points={
         'console_scripts': [

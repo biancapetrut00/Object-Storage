@@ -22,7 +22,6 @@ class ObjectTests(base.BaseTestCase):
             self.object_name,
             "data")
         headers = {'x-api-key': self.token}
-        #files = {'file': ('testfile.txt', 'some,data,to,send')}
         r = requests.put(url, headers=headers, data=payload)
         self.assertEqual(r.status_code, 200)
 
@@ -32,6 +31,5 @@ class ObjectTests(base.BaseTestCase):
             self.object_name,
             "data")
         r2 = requests.get(url2, headers=headers)
-        print(r2.text)
         self.assertEqual(r2.text, payload)
 

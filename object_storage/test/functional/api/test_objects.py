@@ -15,19 +15,23 @@ class ObjectTests(base.BaseTestCase):
         self.assertEqual(obj['description'], None)
 
     def test_upload_object_data(self):
-        url = self._get_url("containers", self.container_name)
+        payload = "test payload"
+        url = self._get_url(
+            "containers",
+            self.container_name,
+            self.object_name,
+            "data")
         headers = {'x-api-key': self.token}
-        files = {'file': ('testfile.txt', 'some,data,to,send')}
-        r = requests.put(url, headers=headers, files=files)
-        obj_db = {
-            "name": self.object_name,
-            "container": self.container_name
-        }
-        n = SimpleNamespace(**obj_db)
-        # obj_db = {}
-        # obj_db.container = self.container_name
-        # obj_db.name = self.object_name
-        print(obj_db)
-        backend = factory.get_backend()
-        response = backend.read_object(n)
-        self.assertEqual(response, 'some,data,to,send')
+        #files = {'file': ('testfile.txt', 'some,data,to,send')}
+        r = requests.put(url, headers=headers, data=payload)
+        self.assertEqual(r.status_code, 200)
+
+        url2 = self._get_url(
+            "containers",
+            self.container_name,
+            self.object_name,
+            "data")
+        r2 = requests.get(url2, headers=headers)
+        print(r2.text)
+        self.assertEqual(r2.text, payload)
+

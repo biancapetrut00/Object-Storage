@@ -1,13 +1,19 @@
-name: 'Running tests'
-on:
-  pull_request:
-    types:
-      - closed
-
+name: Object storage tests
+on: [push]
 jobs:
-  if_merged:
-    if: github.event.pull_request.merged == true
-    runs-on: [self-hosted, linux]
+  run-tests:
+    runs-on: ubuntu-latest
     steps:
-    - run: python3 -m testtools.run
-      working-directory: workspace/Project/object_storage
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: pip install testtools
+      - run: pip install Werkzeug
+      - run: pip install Flask
+      - run: pip install SQLAlchemy
+      - run: pip install Flask-SQLAlchemy
+      - run: pip install flask-json-schema
+      - run: pip install flask-expects-json
+      - run: pip install toml
+      - run: python3 -m testtools.run
+      - run: echo "🍏 This job's status is ${{ job.status }}."

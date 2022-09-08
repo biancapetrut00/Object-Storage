@@ -9,5 +9,6 @@ jobs:
         uses: actions/checkout@v3
       - run: pip install testtools
       - run: pip install Werkzeug
+      - run: pip install Flask
       - run: python3 -m testtools.run
       - run: echo "🍏 This job's status is ${{ job.status }}."

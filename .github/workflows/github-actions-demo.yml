@@ -10,5 +10,6 @@ jobs:
       - run: pip install testtools
       - run: pip install Werkzeug
       - run: pip install Flask
+      - run: pip install SQLAlchemy
       - run: python3 -m testtools.run
       - run: echo "🍏 This job's status is ${{ job.status }}."

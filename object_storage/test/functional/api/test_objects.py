@@ -4,7 +4,6 @@ from object_storage.backend import factory
 import requests
 import json
 from flask import request
-from types import SimpleNamespace
 
 class ObjectTests(base.BaseTestCase):
     def test_create_object(self):

@@ -12,5 +12,6 @@ jobs:
       - run: pip install Flask
       - run: pip install SQLAlchemy
       - run: pip install Flask-SQLAlchemy
+      - run: pip install flask-json-schema
       - run: python3 -m testtools.run
       - run: echo "🍏 This job's status is ${{ job.status }}."

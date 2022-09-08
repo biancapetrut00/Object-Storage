@@ -7,13 +7,7 @@ jobs:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Check out repository code
         uses: actions/checkout@v3
-      - run: pip install testtools
-      - run: pip install Werkzeug
-      - run: pip install Flask
-      - run: pip install SQLAlchemy
-      - run: pip install Flask-SQLAlchemy
-      - run: pip install flask-json-schema
-      - run: pip install flask-expects-json
-      - run: pip install toml
+      - run: pip install -r test_requirements.txt
+      - run: pip install -e .
       - run: python3 -m testtools.run
       - run: echo "🍏 This job's status is ${{ job.status }}."

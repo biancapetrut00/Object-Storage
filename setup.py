@@ -9,7 +9,12 @@ setup(
     #url='https://www.python.org/sigs/distutils-sig/',
     packages=['object_storage'],
     install_requires=[
-        'toml'
+        'toml',
+        'Flask',
+        'SQLAlchemy',
+        'Flask-SQLAlchemy',
+        'flask-json-schema',
+        'flask-expects-json'
     ],
     entry_points={
         'console_scripts': [

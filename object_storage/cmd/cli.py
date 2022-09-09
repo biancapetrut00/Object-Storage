@@ -29,6 +29,9 @@ parser.add_argument("path", help="choose the route")
 parser.add_argument("request_type", help="get/post/delete")
 parser.add_argument("--name", help="input username")
 parser.add_argument("--password", help="input password")
+parser.add_argument("--containerName", help="name of the container")
+parser.add_argument("--description", help="description for container/object")
+parser.add_argument("--objectName", help="name of the object")
 args = parser.parse_args()
 
 def show_users():
@@ -72,13 +75,58 @@ def show_user():
     token_dict = get_auth_token()
     token = token_dict['token']
     user = token_dict['user']
-    print(token)
     url = get_url("users", user)
     headers = {'x-api-key': token}
     r = requests.get(url, headers=headers)
     r_dict = json.loads(r.text)
     return r_dict
 
+def show_containers():
+    token_dict = get_auth_token()
+    token = token_dict['token']
+    user = token_dict['user']
+    url = get_url("containers")
+    headers = {'x-api-key': token}
+    r = requests.get(url, headers=headers)
+    r_dict = json.loads(r.text)
+    return r_dict
+
+def create_containers():
+    if not args.containerName:
+        return "please input a container name"
+    name = args.containerName
+    if args.description:
+        description = args.description
+        payload = {'name': name, 'description': description}
+    else:
+        payload = {'name': name}
+    token_dict = get_auth_token()
+    token = token_dict['token']
+    user = token_dict['user']
+    url = get_url("containers")
+    headers = {'x-api-key': token}
+    r = requests.post(url, headers=headers, json=payload)
+    r_dict = json.loads(r.text)
+    return r_dict
+
+def create_objects():
+    if not args.objectName:
+        return "please input an object name"
+    name = args.objectName
+    container = args.containerName
+    if args.description:
+        description = args.description
+        payload = {'name': name, 'description': description}
+    else:
+        payload = {'name': name}
+    token_dict = get_auth_token()
+    token = token_dict['token']
+    user = token_dict['user']
+    url = get_url("containers", container)
+    headers = {'x-api-key': token}
+    r = requests.post(url, headers=headers, json=payload)
+    r_dict = json.loads(r.text)
+    return r_dict
 
 
 if args.path == "users" and args.request_type == "show":
@@ -92,3 +140,12 @@ if args.path == "log" and args.request_type == "in":
 
 if args.path == "user" and args.request_type =="show":
     print(show_user())
+
+if args.path == "containers" and args.request_type == "show":
+    print(show_containers())
+
+if args.path == "containers" and args.request_type == "create":
+    print(create_containers())
+
+if args.path == "objects" and args.request_type =="create":
+    print(create_objects())

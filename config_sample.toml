@@ -1,4 +1,6 @@
 db_url = "sqlite:////tmp/object_storage.db"
+host = "0.0.0.0"
+port = 80
 
 [file]
 container_directory = "/tmp/object_storage"

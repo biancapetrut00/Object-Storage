@@ -1,4 +1,5 @@
 IMG ?= biancapetrut/simple_object_storage:dev
+HELM_VERSION ?= 0.1.0
 
 .PHONY: build
 build: 
@@ -12,3 +13,11 @@ docker_build: build
 .PHONY: docker_push
 docker_push: docker_build
 	docker push ${IMG}
+
+.PHONY: helm_package
+helm_package: 
+	mkdir -p dist
+	HELM_EXPERIMENTAL_OCI=1 \
+        helm package helm \
+        --version ${HELM_VERSION} \
+        -d dist/

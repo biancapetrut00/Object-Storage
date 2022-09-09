@@ -16,6 +16,7 @@ from object_storage.api.controllers.users import users_api
 from object_storage.api.controllers.containers import containers_api
 from object_storage.api.controllers.objects import objects_api
 from object_storage.api.controllers.login import login_api
+from object_storage.api.controllers.status import status_api
 from object_storage import conf
 import argparse
 import logging
@@ -46,6 +47,7 @@ def create_app(test_config=None):
     app.register_blueprint(containers_api)
     app.register_blueprint(objects_api)
     app.register_blueprint(login_api)
+    app.register_blueprint(status_api)
 
     if test_config is None:
         app.config.from_pyfile('config.py', silent=True)
@@ -84,7 +86,9 @@ def main():
     setup_logging()
 
     app = create_app()
-    app.run(host='0.0.0.0')
+    app.run(
+        conf.CONF.get("host", '0.0.0.0'),
+        conf.CONF.get("port", 80))
 
 
 if __name__ == '__main__':
